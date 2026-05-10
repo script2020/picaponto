@@ -34,16 +34,15 @@
                         @csrf
 
                         <div>
-                            <x-input-label for="observacoes" value="Observações (opcional)" />
-                            <x-text-input
+                            <x-input-label for="observacoes" value="Resumo do trabalho"> />
+                            <textarea
                                 id="observacoes"
                                 name="observacoes"
-                                type="text"
-                                class="mt-1 block w-full"
-                                maxlength="500"
+                                class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                rows="4"
+                                maxlength="1000"
                                 placeholder="Ex: trabalho remoto, reunião..."
-                                value="{{ old('observacoes') }}"
-                            />
+                            >{{ old('observacoes') }}</textarea>
                             <x-input-error :messages="$errors->get('observacoes')" class="mt-1" />
                         </div>
 
