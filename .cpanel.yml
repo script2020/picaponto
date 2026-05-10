@@ -1,0 +1,5 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/mbdecoreu/picaponto.mbdecor.eu
+    - /bin/cp -R %{home}/repositories/picaponto/. $DEPLOYPATH
