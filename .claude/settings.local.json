@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -r \"registos.index\\\\|registarEntrada\\\\|registarSaida\" 'c:\\\\xampp\\\\htdocs\\\\picaponto' ! -path '*/vendor/*')",
+      "Bash(Copy-Item \"C:\\\\xampp\\\\htdocs\\\\picaponto\\\\postcss.config.js\" \"C:\\\\xampp\\\\htdocs\\\\picaponto\\\\postcss.config.cjs\")",
+      "Bash(Remove-Item \"C:\\\\xampp\\\\htdocs\\\\picaponto\\\\postcss.config.js\")",
+      "PowerShell(Copy-Item \"C:\\\\xampp\\\\htdocs\\\\picaponto\\\\postcss.config.js\" \"C:\\\\xampp\\\\htdocs\\\\picaponto\\\\postcss.config.cjs\")",
+      "PowerShell(Copy-Item \"C:\\\\xampp\\\\htdocs\\\\picaponto\\\\tailwind.config.js\" \"C:\\\\xampp\\\\htdocs\\\\picaponto\\\\tailwind.config.cjs\")",
+      "Bash(xargs grep -l -i \"admin\")",
+      "Bash(php artisan *)",
+      "Bash(composer require *)",
+      "Bash(npm run *)",
+      "Bash(npm install *)",
+      "Bash(composer install *)",
+      "Bash(powershell -Command ' *)",
+      "Bash(Get-Content \"c:\\\\xampp\\\\htdocs\\\\picaponto\\\\storage\\\\logs\\\\laravel.log\" -Tail 50)"
+    ]
+  }
+}
