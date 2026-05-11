@@ -35,17 +35,25 @@ class HorarioSemanaController extends Controller
         foreach ($horarios as $dateStr => $h) {
             if (!$h->ativo) continue;
 
+            $titulo = substr($h->hora_inicio, 0, 5) . ' – ' . substr($h->hora_fim, 0, 5);
+            if ($h->reposicao) {
+                $titulo .= ' ↩';
+            }
+
             $events[] = [
                 'id'    => $dateStr,
-                'title' => substr($h->hora_inicio, 0, 5) . ' – ' . substr($h->hora_fim, 0, 5),
-                'start' => $dateStr . 'T' . $h->hora_inicio,
-                'end'   => $dateStr . 'T' . $h->hora_fim,
-                'color' => '#6366f1',
+                'title' => $titulo,
+                'start' => $dateStr,
+                'end'   => $dateStr,
+                'allDay' => true,
+                'color' => $h->reposicao ? '#f59e0b' : '#6366f1',
                 'extendedProps' => [
-                    'data'        => $dateStr,
-                    'hora_inicio' => substr($h->hora_inicio, 0, 5),
-                    'hora_fim'    => substr($h->hora_fim, 0, 5),
-                    'ativo'       => true,
+                    'data'            => $dateStr,
+                    'hora_inicio'     => substr($h->hora_inicio, 0, 5),
+                    'hora_fim'        => substr($h->hora_fim, 0, 5),
+                    'ativo'           => true,
+                    'reposicao'       => (bool) $h->reposicao,
+                    'data_reposicao'  => $h->data_reposicao?->toDateString(),
                 ],
             ];
         }
@@ -74,8 +82,9 @@ class HorarioSemanaController extends Controller
             $events[] = [
                 'id'    => $dateStr,
                 'title' => substr($h->hora_inicio, 0, 5) . ' – ' . substr($h->hora_fim, 0, 5),
-                'start' => $dateStr . 'T' . $h->hora_inicio,
-                'end'   => $dateStr . 'T' . $h->hora_fim,
+                'start' => $dateStr,
+                'end'   => $dateStr,
+                'allDay' => true,
                 'color' => '#6366f1',
                 'extendedProps' => [
                     'hora_inicio' => substr($h->hora_inicio, 0, 5),
@@ -94,21 +103,25 @@ class HorarioSemanaController extends Controller
         $date = Carbon::createFromFormat('Y-m-d', $data);
         abort_if(!$date || !$date->isValid(), 404);
 
-        $ativo = $request->boolean('ativo');
+        $ativo      = $request->boolean('ativo');
+        $reposicao  = $request->boolean('reposicao');
 
         if ($ativo) {
             $request->validate([
-                'hora_inicio' => 'required|date_format:H:i',
-                'hora_fim'    => 'required|date_format:H:i|after:hora_inicio',
+                'hora_inicio'    => 'required|date_format:H:i',
+                'hora_fim'       => 'required|date_format:H:i|after:hora_inicio',
+                'data_reposicao' => $reposicao ? 'required|date' : 'nullable|date',
             ]);
         }
 
         HorarioSemana::updateOrCreate(
             ['user_id' => Auth::id(), 'data' => $date->toDateString()],
             [
-                'ativo'       => $ativo,
-                'hora_inicio' => $ativo ? $request->hora_inicio : null,
-                'hora_fim'    => $ativo ? $request->hora_fim    : null,
+                'ativo'           => $ativo,
+                'hora_inicio'     => $ativo ? $request->hora_inicio    : null,
+                'hora_fim'        => $ativo ? $request->hora_fim       : null,
+                'reposicao'       => $ativo ? $reposicao               : false,
+                'data_reposicao'  => ($ativo && $reposicao) ? $request->data_reposicao : null,
             ]
         );
 
