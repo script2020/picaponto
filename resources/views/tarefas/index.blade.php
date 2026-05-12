@@ -24,7 +24,7 @@
 
             {{-- Tab Bar --}}
             <div class="flex gap-1 mb-6 bg-gray-100 rounded-xl p-1 w-fit">
-                @foreach ([['painel','Painel'],['todas','Todas as tarefas'],['nova','Nova Tarefa']] as [$id,$label])
+                @foreach ([['painel','Painel'],['todas','Todas as tarefas'],['detalhe','Detalhe']] as [$id,$label])
                     <button id="tab-btn-{{ $id }}" onclick="abrirTab('{{ $id }}')"
                         class="tab-btn px-5 py-2 rounded-lg text-sm font-medium transition-all duration-150">
                         {{ $label }}
@@ -60,8 +60,24 @@
                     @endforeach
                 </div>
 
+                {{-- Filtro por dia --}}
+                <div class="bg-white rounded-xl shadow-sm p-4 flex flex-wrap gap-3 items-center">
+                    <label for="painel-filtro-data" class="text-sm font-medium text-gray-600">Filtrar por dia:</label>
+                    <input id="painel-filtro-data" type="date"
+                        oninput="filtrarPainel()"
+                        class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                    <button type="button" onclick="painelHoje()"
+                        class="text-xs font-medium text-indigo-600 border border-indigo-200 hover:bg-indigo-50 px-3 py-2 rounded-lg transition">
+                        Hoje
+                    </button>
+                    <button type="button" id="painel-limpar" onclick="painelLimpar()" class="hidden text-xs text-gray-400 hover:text-gray-700 underline">
+                        Limpar filtro
+                    </button>
+                    <span id="painel-filtro-label" class="text-xs text-gray-400 hidden">A mostrar tarefas do dia selecionado</span>
+                </div>
+
                 {{-- Em aberto --}}
-                @php $pendentes = $tarefas->whereIn('estado', ['pendente','em_progresso'])->take(5); @endphp
+                @php $pendentes = $tarefas->whereIn('estado', ['pendente','em_progresso']); @endphp
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
                     <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                         <h3 class="font-semibold text-gray-800">Em aberto</h3>
@@ -70,32 +86,38 @@
                     @if ($pendentes->isEmpty())
                         <p class="px-6 py-6 text-sm text-gray-400">Nenhuma tarefa em aberto.</p>
                     @else
-                        <ul class="divide-y divide-gray-50">
+                        <ul id="painel-lista-pendentes" class="divide-y divide-gray-50">
                             @foreach ($pendentes as $t)
-                                <li class="px-6 py-4 hover:bg-gray-50 cursor-pointer transition" onclick="abrirDetalhe({{ $t->id }})">
+                                <li class="painel-row-pendente px-6 py-4 hover:bg-gray-50 cursor-pointer transition"
+                                    data-data="{{ $t->data ? $t->data->format('Y-m-d') : '' }}"
+                                    onclick="abrirDetalhe({{ $t->id }})">
                                     @include('tarefas._linha', ['t' => $t])
                                 </li>
                             @endforeach
                         </ul>
+                        <p id="painel-sem-pendentes" class="hidden px-6 py-6 text-sm text-gray-400">Nenhuma tarefa em aberto para este dia.</p>
                     @endif
                 </div>
 
                 {{-- Concluídas recentemente --}}
-                @php $recentes = $tarefas->where('estado','concluida')->take(5); @endphp
-                @if ($recentes->isNotEmpty())
-                    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-                        <div class="px-6 py-4 border-b border-gray-100">
-                            <h3 class="font-semibold text-gray-800">Concluídas recentemente</h3>
-                        </div>
-                        <ul class="divide-y divide-gray-50">
+                @php $recentes = $tarefas->where('estado','concluida'); @endphp
+                <div id="painel-bloco-concluidas" class="bg-white rounded-xl shadow-sm overflow-hidden {{ $recentes->isEmpty() ? 'hidden' : '' }}">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h3 class="font-semibold text-gray-800">Concluídas recentemente</h3>
+                    </div>
+                    @if ($recentes->isNotEmpty())
+                        <ul id="painel-lista-concluidas" class="divide-y divide-gray-50">
                             @foreach ($recentes as $t)
-                                <li class="px-6 py-4 hover:bg-gray-50 cursor-pointer transition" onclick="abrirDetalhe({{ $t->id }})">
+                                <li class="painel-row-concluida px-6 py-4 hover:bg-gray-50 cursor-pointer transition"
+                                    data-data="{{ $t->data ? $t->data->format('Y-m-d') : '' }}"
+                                    onclick="abrirDetalhe({{ $t->id }})">
                                     @include('tarefas._linha', ['t' => $t])
                                 </li>
                             @endforeach
                         </ul>
-                    </div>
-                @endif
+                        <p id="painel-sem-concluidas" class="hidden px-6 py-6 text-sm text-gray-400">Nenhuma tarefa concluída para este dia.</p>
+                    @endif
+                </div>
             </div>
 
             {{-- ====== TODAS ====== --}}
@@ -362,64 +384,48 @@
                             </div>
                         @endif
 
-                        {{-- Comentários --}}
+                        {{-- Comentários (Thread system) --}}
                         <div class="bg-white rounded-xl shadow-sm p-6">
                             <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">Comentários</div>
                             @php $comentarios = $t->comentarios ?? []; @endphp
                             @if (count($comentarios) === 0)
                                 <p class="text-sm text-gray-400 mb-4">Sem comentários ainda.</p>
                             @else
-                                <ul class="space-y-5 mb-5">
+                                <ul class="space-y-4 mb-5">
                                     @foreach (array_reverse($comentarios, true) as $idx => $c)
                                         @php
                                             $cId = $c['id'] ?? 'c' . $idx;
+                                            $replies = $c['replies'] ?? [];
+                                            $numReplies = count($replies);
                                         @endphp
-                                        <li>
-                                            {{-- Main comment --}}
-                                            <div class="flex gap-3">
-                                                <div class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                                        <li class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                            {{-- Comment header --}}
+                                            <div class="flex items-start gap-3 mb-3">
+                                                <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center shrink-0">
                                                     {{ strtoupper(substr($c['user_nome'], 0, 1)) }}
                                                 </div>
-                                                <div class="flex-1 bg-gray-50 rounded-lg px-4 py-3">
-                                                    <div class="flex items-center justify-between mb-1">
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="flex items-center gap-2">
                                                         <span class="text-xs font-semibold text-gray-700">{{ $c['user_nome'] }}</span>
                                                         <span class="text-xs text-gray-400">{{ \Carbon\Carbon::parse($c['created_at'])->diffForHumans() }}</span>
                                                     </div>
-                                                    <p class="text-sm text-gray-700">{{ $c['conteudo'] }}</p>
+                                                    <p class="text-sm text-gray-700 mt-1">{{ $c['conteudo'] }}</p>
                                                 </div>
                                             </div>
 
-                                            {{-- Reply form --}}
-                                            <form method="POST" action="{{ route('tarefas.resposta', [$t, $cId]) }}" class="mt-2 ml-10 flex gap-2">
-                                                @csrf
-                                                <input type="text" name="conteudo" required maxlength="1000" placeholder="Escreve uma resposta…"
-                                                    class="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-xs focus:ring-indigo-500 focus:border-indigo-500" />
-                                                <button type="submit"
-                                                    class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition">
-                                                    Responder
+                                            {{-- Comment actions --}}
+                                            <div class="flex flex-wrap items-center gap-3 ml-11">
+                                                @if ($numReplies > 0)
+                                                    <button type="button" onclick="abrirThread({{ $t->id }}, '{{ $cId }}')"
+                                                        class="inline-flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-700 font-medium">
+                                                        💬 {{ $numReplies }} {{ $numReplies === 1 ? 'resposta' : 'respostas' }}
+                                                    </button>
+                                                @endif
+                                                <button type="button" onclick="abrirThread({{ $t->id }}, '{{ $cId }}')"
+                                                    class="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 font-medium">
+                                                    {{ $numReplies > 0 ? '📖 Ver thread' : '✏️ Responder' }}
                                                 </button>
-                                            </form>
-
-                                            {{-- Replies --}}
-                                            @php $replies = $c['replies'] ?? []; @endphp
-                                            @if (!empty($replies))
-                                                <ul class="mt-3 ml-10 space-y-3 border-l-2 border-gray-200 pl-4">
-                                                    @foreach (array_reverse($replies) as $r)
-                                                        <li class="flex gap-2">
-                                                            <div class="w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
-                                                                {{ strtoupper(substr($r['user_nome'], 0, 1)) }}
-                                                            </div>
-                                                            <div class="flex-1 bg-gray-50 rounded-lg px-3 py-2">
-                                                                <div class="flex items-center justify-between mb-0.5">
-                                                                    <span class="text-xs font-semibold text-gray-700">{{ $r['user_nome'] }}</span>
-                                                                    <span class="text-xs text-gray-400">{{ \Carbon\Carbon::parse($r['created_at'])->diffForHumans() }}</span>
-                                                                </div>
-                                                                <p class="text-xs text-gray-700">{{ $r['conteudo'] }}</p>
-                                                            </div>
-                                                        </li>
-                                                    @endforeach
-                                                </ul>
-                                            @endif
+                                            </div>
                                         </li>
                                     @endforeach
                                 </ul>
@@ -436,6 +442,65 @@
                                 </button>
                             </form>
                         </div>
+
+                        {{-- Thread modal --}}
+                        <div id="thread-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onclick="if(event.target.id==='thread-modal') fecharThread()">
+                            <div class="bg-white rounded-xl shadow-lg w-full max-w-2xl max-h-screen overflow-hidden flex flex-col" onclick="event.stopPropagation()">
+                                {{-- Modal header --}}
+                                <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                                    <h3 class="text-sm font-semibold text-gray-900">Conversa na thread</h3>
+                                    <button onclick="fecharThread()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">×</button>
+                                </div>
+
+                                {{-- Modal content (scrollable) --}}
+                                <div class="flex-1 overflow-y-auto p-6 space-y-4">
+                                    {{-- Parent comment --}}
+                                    <div id="thread-parent" class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                        {{-- Filled by JS --}}
+                                    </div>
+
+                                    {{-- Divider --}}
+                                    <div class="border-t-2 border-gray-200 pt-2">
+                                        <span class="text-xs text-gray-400 font-medium">THREAD</span>
+                                    </div>
+
+                                    {{-- Replies --}}
+                                    <div id="thread-replies" class="space-y-3">
+                                        {{-- Filled by JS --}}
+                                    </div>
+                                </div>
+
+                                {{-- Modal footer (reply form) --}}
+                                <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                                    <form method="POST" id="thread-reply-form" class="flex gap-3">
+                                        @csrf
+                                        <input type="text" name="conteudo" required maxlength="1000" placeholder="Escreve uma resposta…"
+                                            class="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                                        <button type="submit"
+                                            class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+                                            Responder
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Hidden JSON data for threads --}}
+                        <script id="comments-data" type="application/json">
+                            @php
+                                $commentsJson = [];
+                                foreach (array_reverse($comentarios, true) as $idx => $c) {
+                                    $cId = $c['id'] ?? 'c' . $idx;
+                                    $commentsJson[$cId] = [
+                                        'user_nome'  => $c['user_nome'],
+                                        'conteudo'   => $c['conteudo'],
+                                        'created_at' => $c['created_at'],
+                                        'replies'    => $c['replies'] ?? [],
+                                    ];
+                                }
+                                echo json_encode($commentsJson);
+                            @endphp
+                        </script>
 
                     </div>{{-- /detalhe-N --}}
                 @endforeach
@@ -528,6 +593,8 @@
 
     <script>
         const TABS = ['painel', 'todas', 'detalhe', 'nova'];
+        let currentTarefaId = null;
+        let commentsData = {};
 
         function abrirTab(nome) {
             TABS.forEach(t => {
@@ -559,6 +626,84 @@
             const btn = document.getElementById('tab-btn-detalhe');
             btn.classList.remove('hidden');
             abrirTab('detalhe');
+
+            // Load comments data for this tarefa
+            const dataEl = alvo.querySelector('script[type="application/json"]');
+            if (dataEl) {
+                currentTarefaId = id;
+                commentsData = JSON.parse(dataEl.textContent);
+            }
+        }
+
+        function abrirThread(tarefaId, comentarioId) {
+            const data = commentsData[comentarioId];
+            if (!data) return;
+
+            // Render parent comment
+            const parentHtml = `
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center shrink-0">
+                        ${data.user_nome.charAt(0).toUpperCase()}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-semibold text-gray-700">${data.user_nome}</span>
+                            <span class="text-xs text-gray-400">${timeAgo(data.created_at)}</span>
+                        </div>
+                        <p class="text-sm text-gray-700 mt-1">${escapeHtml(data.conteudo)}</p>
+                    </div>
+                </div>
+            `;
+            document.getElementById('thread-parent').innerHTML = parentHtml;
+
+            // Render replies
+            const repliesHtml = data.replies.map(r => `
+                <div class="flex items-start gap-3 bg-gray-50 p-3 rounded-lg">
+                    <div class="w-7 h-7 rounded-full bg-green-100 text-green-700 text-xs font-bold flex items-center justify-center shrink-0">
+                        ${r.user_nome.charAt(0).toUpperCase()}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-semibold text-gray-700">${r.user_nome}</span>
+                            <span class="text-xs text-gray-400">${timeAgo(r.created_at)}</span>
+                        </div>
+                        <p class="text-xs text-gray-700 mt-0.5">${escapeHtml(r.conteudo)}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('thread-replies').innerHTML = repliesHtml || '<p class="text-xs text-gray-400 italic">Nenhuma resposta ainda.</p>';
+
+            // Setup reply form
+            const form = document.getElementById('thread-reply-form');
+            form.action = `/tarefas/${tarefaId}/comentarios/${comentarioId}/resposta`;
+            form.onsubmit = (e) => {
+                e.preventDefault();
+                form.submit();
+            };
+
+            // Show modal
+            document.getElementById('thread-modal').classList.remove('hidden');
+        }
+
+        function fecharThread() {
+            document.getElementById('thread-modal').classList.add('hidden');
+        }
+
+        function timeAgo(dateStr) {
+            const now = new Date();
+            const date = new Date(dateStr);
+            const diff = Math.floor((now - date) / 1000);
+            if (diff < 60) return 'agora';
+            if (diff < 3600) return Math.floor(diff / 60) + 'm';
+            if (diff < 86400) return Math.floor(diff / 3600) + 'h';
+            if (diff < 604800) return Math.floor(diff / 86400) + 'd';
+            return date.toLocaleDateString('pt-PT');
+        }
+
+        function escapeHtml(text) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text.replace(/[&<>"']/g, m => map[m]);
         }
 
         function toggleEditar(id) {
@@ -570,6 +715,49 @@
                 if (sp) aplicarCorPrioridade(sp);
                 if (se) aplicarCorEstado(se);
             }
+        }
+
+        function filtrarPainel() {
+            const data = document.getElementById('painel-filtro-data').value;
+            const limpar = document.getElementById('painel-limpar');
+            const label  = document.getElementById('painel-filtro-label');
+
+            limpar.classList.toggle('hidden', !data);
+            label.classList.toggle('hidden', !data);
+
+            ['pendente', 'concluida'].forEach(tipo => {
+                const rows = document.querySelectorAll('.painel-row-' + tipo);
+                let visiveis = 0;
+                rows.forEach((row, i) => {
+                    let visivel;
+                    if (data) {
+                        visivel = row.dataset.data === data;
+                    } else {
+                        visivel = i < 5;
+                    }
+                    row.classList.toggle('hidden', !visivel);
+                    if (visivel) visiveis++;
+                });
+                const semMsg = document.getElementById('painel-sem-' + (tipo === 'pendente' ? 'pendentes' : 'concluidas'));
+                if (semMsg) semMsg.classList.toggle('hidden', visiveis > 0);
+            });
+
+            const blocoConc = document.getElementById('painel-bloco-concluidas');
+            if (blocoConc) {
+                const algumaConcluida = document.querySelector('.painel-row-concluida:not(.hidden)');
+                blocoConc.classList.toggle('hidden', !algumaConcluida);
+            }
+        }
+
+        function painelHoje() {
+            const hoje = new Date().toISOString().slice(0, 10);
+            document.getElementById('painel-filtro-data').value = hoje;
+            filtrarPainel();
+        }
+
+        function painelLimpar() {
+            document.getElementById('painel-filtro-data').value = '';
+            filtrarPainel();
         }
 
         function filtrarTarefas() {
