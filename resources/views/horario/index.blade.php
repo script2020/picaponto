@@ -61,6 +61,30 @@
                     </div>
                 </div>
 
+                <div class="border-t border-gray-100 pt-4 mt-4">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input id="modal-reposicao" type="checkbox" name="reposicao" value="1"
+                               class="rounded border-gray-300 text-amber-500 shadow-sm focus:ring-amber-400"
+                               onchange="
+                                   var campo = document.getElementById('modal-campo-reposicao');
+                                   if (this.checked) {
+                                       campo.classList.remove('hidden');
+                                   } else {
+                                       campo.classList.add('hidden');
+                                       document.getElementById('modal-data-reposicao').value = '';
+                                   }
+                               ">
+                        <span class="text-sm font-medium text-gray-700">Dia de reposição</span>
+                    </label>
+
+                    <div id="modal-campo-reposicao" class="hidden mt-3">
+                        <x-input-label for="modal-data-reposicao" value="Dia a repor" />
+                        <input id="modal-data-reposicao" type="date" name="data_reposicao"
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                        <p class="mt-1 text-xs text-gray-400">Indica qual o dia de folga que este dia vai repor.</p>
+                    </div>
+                </div>
+
                 @if ($errors->any())
                     <div class="mt-3 text-sm text-red-600">{{ $errors->first() }}</div>
                 @endif
