@@ -23,7 +23,6 @@ class RegistoHoras extends Model
         return $this->belongsTo(User::class);
     }
 
-
     public function getDuracaoAttribute(): ?string
     {
         if (!$this->saida) {

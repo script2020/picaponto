@@ -3,7 +3,6 @@
 use App\Http\Controllers\HorarioSemanaController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegistoHorasController;
-use App\Http\Controllers\TarefaController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -30,15 +29,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/', [RegistoHorasController::class, 'index'])->name('registos.index');
     Route::post('/registos/entrada', [RegistoHorasController::class, 'registarEntrada'])->name('registos.entrada');
     Route::post('/registos/{registo}/saida', [RegistoHorasController::class, 'registarSaida'])->name('registos.saida');
-
-    Route::get('/tarefas', [TarefaController::class, 'index'])->name('tarefas.index');
-    Route::get('/tarefas/criar', [TarefaController::class, 'create'])->name('tarefas.create');
-    Route::post('/tarefas', [TarefaController::class, 'store'])->name('tarefas.store');
-    Route::put('/tarefas/{tarefa}', [TarefaController::class, 'update'])->name('tarefas.update');
-    Route::delete('/tarefas/{tarefa}', [TarefaController::class, 'destroy'])->name('tarefas.destroy');
-    Route::post('/tarefas/{tarefa}/comentarios', [TarefaController::class, 'adicionarComentario'])->name('tarefas.comentarios');
-    Route::post('/tarefas/{tarefa}/comentarios/{comentarioId}/resposta', [TarefaController::class, 'adicionarRespostaComentario'])->name('tarefas.resposta');
-    Route::post('/tarefas/{tarefa}/avancar', [TarefaController::class, 'avancarEstado'])->name('tarefas.avancar');
 
     Route::get('/horario', [HorarioSemanaController::class, 'index'])->name('horario.index');
     Route::get('/horario/eventos', [HorarioSemanaController::class, 'eventos'])->name('horario.eventos');
