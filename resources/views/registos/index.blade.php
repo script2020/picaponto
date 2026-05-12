@@ -34,7 +34,7 @@
                         @csrf
 
                         <div>
-                            <x-input-label for="observacoes" value="Observações (opcional)" />
+                            <x-input-label for="observacoes" value="Resumo do trabalho"> />
                             <textarea
                                 id="observacoes"
                                 name="observacoes"
@@ -67,11 +67,7 @@
 
             {{-- Histórico --}}
             <div class="bg-white shadow-sm sm:rounded-lg p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-gray-800">Histórico</h3>
-                    <a href="{{ route('tarefas.index') }}"
-                        class="text-sm text-blue-600 hover:underline">Ver todas as tarefas →</a>
-                </div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Histórico</h3>
 
                 @if ($historico->isEmpty())
                     <p class="text-sm text-gray-500">Ainda não existem registos concluídos.</p>
