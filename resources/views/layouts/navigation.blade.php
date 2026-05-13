@@ -20,10 +20,6 @@
                         Horário
                     </x-nav-link>
 
-                    <x-nav-link :href="route('tarefas.index')" :active="request()->routeIs('tarefas.*')">
-                        Tarefas
-                    </x-nav-link>
-
                     @if (Auth::user()->role === 'admin')
                         <x-nav-link :href="route('registos.admin')" :active="request()->routeIs('registos.admin')">
                             Painel Admin
@@ -87,10 +83,6 @@
 
             <x-responsive-nav-link :href="route('horario.index')" :active="request()->routeIs('horario.*')">
                 Horário
-            </x-responsive-nav-link>
-
-            <x-responsive-nav-link :href="route('tarefas.index')" :active="request()->routeIs('tarefas.*')">
-                Tarefas
             </x-responsive-nav-link>
 
             @if (Auth::user()->role === 'admin')

@@ -11,13 +11,11 @@ class HorarioSemana extends Model
 
     protected $table = 'horario_semanas';
 
-    protected $fillable = ['user_id', 'data', 'hora_inicio', 'hora_fim', 'ativo', 'reposicao', 'data_reposicao'];
+    protected $fillable = ['user_id', 'data', 'hora_inicio', 'hora_fim', 'ativo'];
 
     protected $casts = [
-        'data'            => 'date',
-        'ativo'           => 'boolean',
-        'reposicao'       => 'boolean',
-        'data_reposicao'  => 'date',
+        'data'  => 'date',
+        'ativo' => 'boolean',
     ];
 
     public function user()
