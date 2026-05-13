@@ -30,10 +30,6 @@
                         {{ $label }}
                     </button>
                 @endforeach
-                <button id="tab-btn-detalhe" onclick="abrirTab('detalhe')"
-                    class="tab-btn px-5 py-2 rounded-lg text-sm font-medium transition-all duration-150 hidden">
-                    Detalhe
-                </button>
             </div>
 
             {{-- ====== PAINEL ====== --}}
