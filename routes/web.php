@@ -39,6 +39,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/tarefas/{tarefa}/comentarios', [TarefaController::class, 'adicionarComentario'])->name('tarefas.comentarios');
     Route::post('/tarefas/{tarefa}/comentarios/{comentarioId}/resposta', [TarefaController::class, 'adicionarRespostaComentario'])->name('tarefas.resposta');
     Route::post('/tarefas/{tarefa}/avancar', [TarefaController::class, 'avancarEstado'])->name('tarefas.avancar');
+    Route::post('/tarefas/{tarefa}/ficheiros', [TarefaController::class, 'submeterFicheiro'])->name('tarefas.ficheiros.store');
+    Route::delete('/tarefas/{tarefa}/ficheiros/{ficheiroId}', [TarefaController::class, 'removerFicheiro'])->name('tarefas.ficheiros.destroy');
 
     Route::get('/horario', [HorarioSemanaController::class, 'index'])->name('horario.index');
     Route::get('/horario/eventos', [HorarioSemanaController::class, 'eventos'])->name('horario.eventos');

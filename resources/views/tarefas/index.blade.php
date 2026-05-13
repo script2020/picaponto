@@ -384,6 +384,67 @@
                             </div>
                         @endif
 
+                        {{-- Entregáveis / Ficheiros --}}
+                        <div class="bg-white rounded-xl shadow-sm p-6">
+                            <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">Entregáveis</div>
+
+                            @php $ficheiros = $t->ficheiros ?? []; @endphp
+
+                            @if (count($ficheiros) === 0)
+                                <p class="text-sm text-gray-400 mb-4">Nenhum ficheiro submetido ainda.</p>
+                            @else
+                                <ul class="space-y-2 mb-5">
+                                    @foreach (array_reverse($ficheiros, true) as $f)
+                                        <li class="flex items-center justify-between gap-3 bg-gray-50 rounded-lg px-4 py-3 border border-gray-200">
+                                            <div class="flex items-center gap-3 min-w-0">
+                                                <span class="text-lg shrink-0">📎</span>
+                                                <div class="min-w-0">
+                                                    <a href="{{ Storage::url($f['caminho']) }}"
+                                                       target="_blank"
+                                                       class="text-sm font-medium text-indigo-600 hover:underline truncate block max-w-xs">
+                                                        {{ $f['nome_original'] }}
+                                                    </a>
+                                                    <p class="text-xs text-gray-400 mt-0.5">
+                                                        {{ $f['user_nome'] }} · {{ \Carbon\Carbon::parse($f['created_at'])->diffForHumans() }}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            @if ($t->user_id === Auth::id() || ($f['user_id'] ?? null) == Auth::id())
+                                                <form method="POST"
+                                                      action="{{ route('tarefas.ficheiros.destroy', [$t, $f['id']]) }}"
+                                                      onsubmit="return confirm('Remover este ficheiro?')">
+                                                    @csrf @method('DELETE')
+                                                    <button type="submit"
+                                                        class="text-xs text-red-500 hover:text-red-700 font-medium shrink-0">
+                                                        Remover
+                                                    </button>
+                                                </form>
+                                            @endif
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            @endif
+
+                            @if ($t->user_id === Auth::id() || $t->atribuido_a_id === Auth::id())
+                                <form method="POST"
+                                      action="{{ route('tarefas.ficheiros.store', $t) }}"
+                                      enctype="multipart/form-data"
+                                      class="border-t border-gray-200 pt-4">
+                                    @csrf
+                                    <label class="block text-xs font-medium text-gray-600 mb-2">Submeter entregável</label>
+                                    <div class="flex items-center gap-3">
+                                        <input type="file" name="ficheiro" required
+                                            class="flex-1 text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer border border-gray-300 rounded-lg px-3 py-2" />
+                                        <button type="submit"
+                                            class="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+                                            Enviar
+                                        </button>
+                                    </div>
+                                    <p class="text-xs text-gray-400 mt-1.5">Máx. 10 MB · PDF, Word, Excel, PowerPoint, ZIP, imagens, TXT</p>
+                                </form>
+                            @endif
+                        </div>
+
                         {{-- Comentários (Thread system) --}}
                         <div class="bg-white rounded-xl shadow-sm p-6">
                             <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">Comentários</div>

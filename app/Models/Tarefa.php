@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Tarefa extends Model
 {
@@ -19,10 +20,12 @@ class Tarefa extends Model
         'projeto',
         'estado',
         'comentarios',
+        'ficheiros',
     ];
 
     protected $casts = [
         'comentarios' => 'array',
+        'ficheiros'   => 'array',
         'data'        => 'date',
     ];
 
@@ -72,6 +75,34 @@ class Tarefa extends Model
         if ($encontrado) {
             $this->update(['comentarios' => $comentarios]);
         }
+    }
+
+    public function adicionarFicheiro(string $nomeOriginal, string $caminho, User $user): void
+    {
+        $ficheiros = $this->ficheiros ?? [];
+        $ficheiros[] = [
+            'id'            => uniqid('f'),
+            'nome_original' => $nomeOriginal,
+            'caminho'       => $caminho,
+            'user_nome'     => $user->name,
+            'user_id'       => $user->id,
+            'created_at'    => now()->toDateTimeString(),
+        ];
+        $this->update(['ficheiros' => $ficheiros]);
+    }
+
+    public function removerFicheiro(string $ficheiroId): void
+    {
+        $ficheiros = $this->ficheiros ?? [];
+        $alvo = collect($ficheiros)->firstWhere('id', $ficheiroId);
+
+        if ($alvo) {
+            Storage::disk('public')->delete($alvo['caminho']);
+        }
+
+        $this->update([
+            'ficheiros' => array_values(array_filter($ficheiros, fn($f) => ($f['id'] ?? null) !== $ficheiroId)),
+        ]);
     }
 
     public function getPrioridadeLabelAttribute(): string

@@ -6,6 +6,7 @@ use App\Models\Tarefa;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class TarefaController extends Controller
 {
@@ -54,7 +55,7 @@ class TarefaController extends Controller
 
     public function update(Request $request, Tarefa $tarefa)
     {
-        abort_unless($tarefa->user_id === Auth::id(), 403);
+        abort_unless($tarefa->user_id == Auth::id(), 403);
 
         $validated = $request->validate([
             'titulo'         => 'required|string|max:255',
@@ -74,7 +75,7 @@ class TarefaController extends Controller
 
     public function destroy(Tarefa $tarefa)
     {
-        abort_unless($tarefa->user_id === Auth::id(), 403);
+        abort_unless($tarefa->user_id == Auth::id(), 403);
 
         $tarefa->delete();
 
@@ -84,7 +85,7 @@ class TarefaController extends Controller
     public function adicionarComentario(Request $request, Tarefa $tarefa)
     {
         abort_unless(
-            $tarefa->user_id === Auth::id() || $tarefa->atribuido_a_id === Auth::id(),
+            $tarefa->user_id == Auth::id() || $tarefa->atribuido_a_id == Auth::id(),
             403
         );
 
@@ -101,7 +102,7 @@ class TarefaController extends Controller
     public function adicionarRespostaComentario(Request $request, Tarefa $tarefa, string $comentarioId)
     {
         abort_unless(
-            $tarefa->user_id === Auth::id() || $tarefa->atribuido_a_id === Auth::id(),
+            $tarefa->user_id == Auth::id() || $tarefa->atribuido_a_id == Auth::id(),
             403
         );
 
@@ -115,10 +116,49 @@ class TarefaController extends Controller
             ->with('sucesso', 'Resposta adicionada.');
     }
 
+    public function submeterFicheiro(Request $request, Tarefa $tarefa)
+    {
+        abort_unless(
+            $tarefa->user_id == Auth::id() || $tarefa->atribuido_a_id == Auth::id(),
+            403
+        );
+
+        $request->validate([
+            'ficheiro' => 'required|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,zip,rar,jpg,jpeg,png,gif,txt,csv',
+        ], [
+            'ficheiro.max'   => 'O ficheiro não pode exceder 10 MB.',
+            'ficheiro.mimes' => 'Tipo de ficheiro não permitido.',
+        ]);
+
+        $file = $request->file('ficheiro');
+        $caminho = $file->store("tarefas/{$tarefa->id}", 'public');
+
+        $tarefa->adicionarFicheiro($file->getClientOriginalName(), $caminho, Auth::user());
+
+        return redirect()->route('tarefas.index', ['detalhe' => $tarefa->id])
+            ->with('sucesso', 'Ficheiro submetido com sucesso.');
+    }
+
+    public function removerFicheiro(Tarefa $tarefa, string $ficheiroId)
+    {
+        $ficheiros = $tarefa->ficheiros ?? [];
+        $alvo = collect($ficheiros)->firstWhere('id', $ficheiroId);
+
+        abort_unless(
+            $tarefa->user_id == Auth::id() || ($alvo && $alvo['user_id'] == Auth::id()),
+            403
+        );
+
+        $tarefa->removerFicheiro($ficheiroId);
+
+        return redirect()->route('tarefas.index', ['detalhe' => $tarefa->id])
+            ->with('sucesso', 'Ficheiro removido.');
+    }
+
     public function avancarEstado(Tarefa $tarefa)
     {
         abort_unless(
-            $tarefa->user_id === Auth::id() || $tarefa->atribuido_a_id === Auth::id(),
+            $tarefa->user_id == Auth::id() || $tarefa->atribuido_a_id == Auth::id(),
             403
         );
 
