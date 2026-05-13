@@ -34,7 +34,7 @@
                         @csrf
 
                         <div>
-                            <x-input-label for="observacoes" value="Resumo do trabalho"> />
+                            <x-input-label for="observacoes" value="Resumo do trabalho" />
                             <textarea
                                 id="observacoes"
                                 name="observacoes"
