@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\HorarioSemanaController;
+use App\Http\Controllers\NotificacaoController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegistoHorasController;
 use App\Http\Controllers\TarefaController;
@@ -16,6 +17,19 @@ use Illuminate\Support\Facades\Route;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
+
+Route::get('/artisan-cache-clear', function () {
+    Artisan::call('config:clear');
+    Artisan::call('cache:clear');
+    Artisan::call('view:clear');
+    Artisan::call('route:clear');
+    return Artisan::output();
+});
+
+Route::get('/artisan-storage-link', function () {
+    Artisan::call('storage:link');
+    return Artisan::output();
+});
 
 
 Route::get('/dashboard', function () {
@@ -45,6 +59,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/horario', [HorarioSemanaController::class, 'index'])->name('horario.index');
     Route::get('/horario/eventos', [HorarioSemanaController::class, 'eventos'])->name('horario.eventos');
     Route::put('/horario/{data}', [HorarioSemanaController::class, 'updateData'])->name('horario.updateData');
+
+    Route::post('/notificacoes/{id}/lida', [NotificacaoController::class, 'marcarLida'])->name('notificacoes.lida');
+    Route::post('/notificacoes/todas-lidas', [NotificacaoController::class, 'marcarTodasLidas'])->name('notificacoes.todas-lidas');
 
     Route::middleware('admin')->group(function () {
         Route::get('/admin/registos', [RegistoHorasController::class, 'admin'])->name('registos.admin');

@@ -249,7 +249,7 @@
 
                         {{-- Ações --}}
                         <div class="flex flex-wrap gap-3">
-                            @if ($t->estado !== 'concluida')
+                            @if ($t->estado !== 'concluida' && $t->atribuido_a_id === Auth::id())
                                 <form method="POST" action="{{ route('tarefas.avancar', $t) }}">
                                     @csrf
                                     <button type="submit"
@@ -264,14 +264,16 @@
                                     class="inline-flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg transition">
                                     ✏️ Editar
                                 </button>
-                                <form method="POST" action="{{ route('tarefas.destroy', $t) }}"
-                                    onsubmit="return confirm('Eliminar esta tarefa?')">
-                                    @csrf @method('DELETE')
-                                    <button type="submit"
-                                        class="inline-flex items-center gap-2 bg-white border border-red-300 hover:bg-red-50 text-red-600 text-sm font-medium px-4 py-2 rounded-lg transition">
-                                        🗑 Eliminar
-                                    </button>
-                                </form>
+                                @if ($t->estado !== 'em_progresso')
+                                    <form method="POST" action="{{ route('tarefas.destroy', $t) }}"
+                                        onsubmit="return confirm('Eliminar esta tarefa?')">
+                                        @csrf @method('DELETE')
+                                        <button type="submit"
+                                            class="inline-flex items-center gap-2 bg-white border border-red-300 hover:bg-red-50 text-red-600 text-sm font-medium px-4 py-2 rounded-lg transition">
+                                            🗑 Eliminar
+                                        </button>
+                                    </form>
+                                @endif
                             @endif
                         </div>
 

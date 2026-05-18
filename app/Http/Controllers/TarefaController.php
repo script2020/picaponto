@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Tarefa;
 use App\Models\User;
+use App\Notifications\TarefaAtribuida;
+use App\Notifications\TarefaComentarioAdicionado;
+use App\Notifications\TarefaEstadoAlterado;
+use App\Notifications\TarefaFicheiroAdicionado;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 
 class TarefaController extends Controller
 {
@@ -49,6 +52,10 @@ class TarefaController extends Controller
 
         $tarefa = Tarefa::create($validated);
 
+        if ($tarefa->atribuido_a_id && $tarefa->atribuido_a_id !== Auth::id()) {
+            $tarefa->atribuidoA->notify(new TarefaAtribuida($tarefa, Auth::user()));
+        }
+
         return redirect()->route('tarefas.index', ['detalhe' => $tarefa->id])
             ->with('sucesso', 'Tarefa criada com sucesso.');
     }
@@ -56,6 +63,8 @@ class TarefaController extends Controller
     public function update(Request $request, Tarefa $tarefa)
     {
         abort_unless($tarefa->user_id == Auth::id(), 403);
+
+        $atribuidoAnterior = $tarefa->atribuido_a_id;
 
         $validated = $request->validate([
             'titulo'         => 'required|string|max:255',
@@ -69,6 +78,11 @@ class TarefaController extends Controller
 
         $tarefa->update($validated);
 
+        $novoAtribuido = $tarefa->fresh()->atribuido_a_id;
+        if ($novoAtribuido && $novoAtribuido !== Auth::id() && $novoAtribuido !== $atribuidoAnterior) {
+            $tarefa->atribuidoA->notify(new TarefaAtribuida($tarefa, Auth::user()));
+        }
+
         return redirect()->route('tarefas.index', ['detalhe' => $tarefa->id])
             ->with('sucesso', 'Tarefa atualizada.');
     }
@@ -76,6 +90,7 @@ class TarefaController extends Controller
     public function destroy(Tarefa $tarefa)
     {
         abort_unless($tarefa->user_id == Auth::id(), 403);
+        abort_if($tarefa->estado === 'em_progresso', 403);
 
         $tarefa->delete();
 
@@ -95,6 +110,12 @@ class TarefaController extends Controller
 
         $tarefa->adicionarComentario($request->conteudo, Auth::user());
 
+        $this->notificarParticipantes(
+            $tarefa,
+            Auth::id(),
+            fn($user) => $user->notify(new TarefaComentarioAdicionado($tarefa, Auth::user(), $request->conteudo))
+        );
+
         return redirect()->route('tarefas.index', ['detalhe' => $tarefa->id])
             ->with('sucesso', 'Comentário adicionado.');
     }
@@ -111,6 +132,12 @@ class TarefaController extends Controller
         ]);
 
         $tarefa->adicionarRespostaComentario($comentarioId, $request->conteudo, Auth::user());
+
+        $this->notificarParticipantes(
+            $tarefa,
+            Auth::id(),
+            fn($user) => $user->notify(new TarefaComentarioAdicionado($tarefa, Auth::user(), $request->conteudo))
+        );
 
         return redirect()->route('tarefas.index', ['detalhe' => $tarefa->id])
             ->with('sucesso', 'Resposta adicionada.');
@@ -135,6 +162,12 @@ class TarefaController extends Controller
 
         $tarefa->adicionarFicheiro($file->getClientOriginalName(), $caminho, Auth::user());
 
+        $this->notificarParticipantes(
+            $tarefa,
+            Auth::id(),
+            fn($user) => $user->notify(new TarefaFicheiroAdicionado($tarefa, Auth::user(), $file->getClientOriginalName()))
+        );
+
         return redirect()->route('tarefas.index', ['detalhe' => $tarefa->id])
             ->with('sucesso', 'Ficheiro submetido com sucesso.');
     }
@@ -157,10 +190,9 @@ class TarefaController extends Controller
 
     public function avancarEstado(Tarefa $tarefa)
     {
-        abort_unless(
-            $tarefa->user_id == Auth::id() || $tarefa->atribuido_a_id == Auth::id(),
-            403
-        );
+        abort_unless($tarefa->atribuido_a_id == Auth::id(), 403);
+
+        $estadoAnterior = $tarefa->estado;
 
         $proximo = match ($tarefa->estado) {
             'pendente'     => 'em_progresso',
@@ -170,7 +202,21 @@ class TarefaController extends Controller
 
         $tarefa->update(['estado' => $proximo]);
 
+        if ($tarefa->user_id !== Auth::id()) {
+            $tarefa->user->notify(new TarefaEstadoAlterado($tarefa->fresh(), Auth::user(), $estadoAnterior));
+        }
+
         return redirect()->route('tarefas.index', ['detalhe' => $tarefa->id])
             ->with('sucesso', 'Estado atualizado para ' . $tarefa->fresh()->estado_label . '.');
+    }
+
+    private function notificarParticipantes(Tarefa $tarefa, int $excluirId, callable $notificar): void
+    {
+        $ids = collect([$tarefa->user_id, $tarefa->atribuido_a_id])
+            ->filter()
+            ->unique()
+            ->reject(fn($id) => $id === $excluirId);
+
+        User::whereIn('id', $ids)->each($notificar);
     }
 }
