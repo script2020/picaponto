@@ -24,9 +24,11 @@ class Tarefa extends Model
     ];
 
     protected $casts = [
-        'comentarios' => 'array',
-        'ficheiros'   => 'array',
-        'data'        => 'date',
+        'user_id'        => 'integer',
+        'atribuido_a_id' => 'integer',
+        'comentarios'    => 'array',
+        'ficheiros'      => 'array',
+        'data'           => 'date',
     ];
 
     public function user()
@@ -122,6 +124,16 @@ class Tarefa extends Model
             'em_progresso' => 'Em Progresso',
             'concluida'    => 'Concluída',
             default        => $this->estado,
+        };
+    }
+
+    public function estadoLabelFrom(string $estado): string
+    {
+        return match ($estado) {
+            'pendente'     => 'Pendente',
+            'em_progresso' => 'Em Progresso',
+            'concluida'    => 'Concluída',
+            default        => $estado,
         };
     }
 }
