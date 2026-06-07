@@ -31,6 +31,11 @@ Route::get('/artisan-storage-link', function () {
     return Artisan::output();
 });
 
+Route::get('/artisan-migrate', function () {
+    Artisan::call('migrate', ['--force' => true]);
+    return Artisan::output();
+});
+
 
 Route::get('/dashboard', function () {
     return view('dashboard');
@@ -66,6 +71,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('admin')->group(function () {
         Route::get('/admin/registos', [RegistoHorasController::class, 'admin'])->name('registos.admin');
         Route::get('/admin/registos/{user}/pdf', [RegistoHorasController::class, 'exportarPdf'])->name('registos.user.pdf');
+        Route::get('/admin/horas-extras', [RegistoHorasController::class, 'horasExtras'])->name('horas.extras');
 
         Route::get('/admin/horario/{user}', [HorarioSemanaController::class, 'adminVer'])->name('horario.admin.ver');
         Route::get('/admin/horario/{user}/eventos', [HorarioSemanaController::class, 'adminEventos'])->name('horario.admin.eventos');

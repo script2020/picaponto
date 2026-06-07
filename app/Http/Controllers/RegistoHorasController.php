@@ -98,6 +98,54 @@ class RegistoHorasController extends Controller
         return view('admin.registos', compact('registos', 'utilizadores'));
     }
 
+    public function horasExtras(Request $request)
+    {
+        $utilizadores = User::orderBy('name')->get();
+
+        $mes = $request->filled('mes') ? $request->mes : now()->format('Y-m');
+        [$ano, $mesNum] = explode('-', $mes);
+
+        $query = RegistoHoras::with('user')
+            ->whereNotNull('saida')
+            ->whereYear('entrada', $ano)
+            ->whereMonth('entrada', $mesNum);
+
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        $registos = $query->orderBy('entrada')->get();
+
+        $resultados = [];
+        foreach ($registos->groupBy('user_id') as $registosUser) {
+            $user   = $registosUser->first()->user;
+            $porDia = [];
+
+            foreach ($registosUser->groupBy(fn($r) => $r->entrada->format('Y-m-d')) as $dia => $registosDia) {
+                $porDia[$dia] = [
+                    'total_minutos'  => $registosDia->sum(fn($r) => $r->entrada->diffInMinutes($r->saida)),
+                    'extras_minutos' => $registosDia->sum(fn($r) => $r->minutosExtras()),
+                    'sessoes'        => $registosDia->map(fn($r) => [
+                        'entrada'        => $r->entrada->format('H:i'),
+                        'saida'          => $r->saida->format('H:i'),
+                        'total_minutos'  => $r->entrada->diffInMinutes($r->saida),
+                        'extras_minutos' => $r->minutosExtras(),
+                    ])->values()->toArray(),
+                ];
+            }
+
+            $resultados[] = [
+                'user'             => $user,
+                'dias_trabalhados' => count($porDia),
+                'total_minutos'    => array_sum(array_column($porDia, 'total_minutos')),
+                'extras_minutos'   => array_sum(array_column($porDia, 'extras_minutos')),
+                'por_dia'          => $porDia,
+            ];
+        }
+
+        return view('admin.horas-extras', compact('resultados', 'utilizadores', 'mes'));
+    }
+
     public function exportarPdf(Request $request, User $user)
     {
         $query = RegistoHoras::where('user_id', $user->id)
