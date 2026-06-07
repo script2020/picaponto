@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -39,5 +40,39 @@ class RegistoHoras extends Model
     public function estaAberto(): bool
     {
         return is_null($this->saida);
+    }
+
+    /**
+     * Calculates overtime minutes for this session by finding time worked
+     * outside the normal schedule (09:00–13:00 and 14:00–18:00).
+     */
+    public function minutosExtras(): int
+    {
+        if (!$this->saida) {
+            return 0;
+        }
+
+        $dia = $this->entrada->format('Y-m-d');
+
+        // Tempo antes das 09:00 não é contabilizado
+        $entrada = $this->entrada->max(Carbon::parse("$dia 09:00"));
+
+        $janelas = [
+            [Carbon::parse("$dia 09:00"), Carbon::parse("$dia 13:00")],
+            [Carbon::parse("$dia 14:00"), Carbon::parse("$dia 18:00")],
+        ];
+
+        $totalMin  = $entrada->diffInMinutes($this->saida);
+        $normalMin = 0;
+
+        foreach ($janelas as [$inicio, $fim]) {
+            $overlapInicio = $entrada->max($inicio);
+            $overlapFim    = $this->saida->min($fim);
+            if ($overlapFim > $overlapInicio) {
+                $normalMin += $overlapInicio->diffInMinutes($overlapFim);
+            }
+        }
+
+        return max(0, $totalMin - $normalMin);
     }
 }

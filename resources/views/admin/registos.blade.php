@@ -46,6 +46,29 @@
                 </form>
             </div>
 
+            {{-- Horas Extras --}}
+            <div class="bg-white shadow-sm sm:rounded-lg p-6">
+                <div class="flex items-center justify-between flex-wrap gap-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800">Horas Extras</h3>
+                        <p class="text-sm text-gray-500 mt-1">Horário normal: 09:00–13:00 e 14:00–18:00 (8h/dia).</p>
+                    </div>
+                    <div class="flex gap-3 flex-wrap">
+                        @if (request('user_id'))
+                            @php $mesAtual = now()->format('Y-m'); @endphp
+                            <a href="{{ route('horas.extras', ['user_id' => request('user_id'), 'mes' => $mesAtual]) }}"
+                                class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm font-medium">
+                                Ver horas extras — {{ \Carbon\Carbon::now()->translatedFormat('F Y') }}
+                            </a>
+                        @endif
+                        <a href="{{ route('horas.extras') }}"
+                            class="px-4 py-2 bg-orange-50 text-orange-700 border border-orange-200 rounded-lg hover:bg-orange-100 text-sm font-medium">
+                            Relatório completo de horas extras
+                        </a>
+                    </div>
+                </div>
+            </div>
+
             {{-- Exportar PDF --}}
             <div class="bg-white shadow-sm sm:rounded-lg p-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Exportar Relatório</h3>
