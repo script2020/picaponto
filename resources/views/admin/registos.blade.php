@@ -121,12 +121,13 @@
                                     <th class="py-2 pr-4">Entrada</th>
                                     <th class="py-2 pr-4">Saída</th>
                                     <th class="py-2 pr-4">Duração</th>
-                                    <th class="py-2">Observações</th>
+                                    <th class="py-2 pr-4">Observações</th>
+                                    <th class="py-2">Ficheiros</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
                                 @foreach ($registos as $registo)
-                                    <tr class="hover:bg-gray-50">
+                                    <tr class="hover:bg-gray-50 align-top">
                                         <td class="py-2 pr-4 font-medium">{{ $registo->user->name }}</td>
                                         <td class="py-2 pr-4">{{ $registo->entrada->format('d/m/Y') }}</td>
                                         <td class="py-2 pr-4">{{ $registo->entrada->format('H:i:s') }}</td>
@@ -140,7 +141,24 @@
                                                 <span class="text-green-600 font-medium">Em curso</span>
                                             @endif
                                         </td>
-                                        <td class="py-2 text-gray-500">{{ $registo->observacoes ?? '—' }}</td>
+                                        <td class="py-2 pr-4 text-gray-500">{{ $registo->observacoes ?? '—' }}</td>
+                                        <td class="py-2">
+                                            @php $ficheiros = $registo->ficheiros ?? []; @endphp
+                                            @if (count($ficheiros) === 0)
+                                                <span class="text-gray-400">—</span>
+                                            @else
+                                                <ul class="space-y-1">
+                                                    @foreach (array_reverse($ficheiros, true) as $f)
+                                                        <li>
+                                                            <a href="{{ Storage::url($f['caminho']) }}" target="_blank"
+                                                               class="inline-flex items-center gap-1 text-indigo-600 hover:underline truncate max-w-[14rem]">
+                                                                📎 {{ $f['nome_original'] }}
+                                                            </a>
+                                                        </li>
+                                                    @endforeach
+                                                </ul>
+                                            @endif
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>

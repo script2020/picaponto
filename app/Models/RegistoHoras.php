@@ -5,6 +5,7 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class RegistoHoras extends Model
 {
@@ -12,16 +13,45 @@ class RegistoHoras extends Model
 
     protected $table = 'registos_horas';
 
-    protected $fillable = ['user_id', 'entrada', 'saida', 'observacoes'];
+    protected $fillable = ['user_id', 'entrada', 'saida', 'observacoes', 'ficheiros'];
 
     protected $casts = [
-        'entrada' => 'datetime',
-        'saida'   => 'datetime',
+        'entrada'   => 'datetime',
+        'saida'     => 'datetime',
+        'ficheiros' => 'array',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function adicionarFicheiro(string $nomeOriginal, string $caminho, User $user): void
+    {
+        $ficheiros = $this->ficheiros ?? [];
+        $ficheiros[] = [
+            'id'            => uniqid('f'),
+            'nome_original' => $nomeOriginal,
+            'caminho'       => $caminho,
+            'user_nome'     => $user->name,
+            'user_id'       => $user->id,
+            'created_at'    => now()->toDateTimeString(),
+        ];
+        $this->update(['ficheiros' => $ficheiros]);
+    }
+
+    public function removerFicheiro(string $ficheiroId): void
+    {
+        $ficheiros = $this->ficheiros ?? [];
+        $alvo = collect($ficheiros)->firstWhere('id', $ficheiroId);
+
+        if ($alvo) {
+            Storage::disk('public')->delete($alvo['caminho']);
+        }
+
+        $this->update([
+            'ficheiros' => array_values(array_filter($ficheiros, fn($f) => ($f['id'] ?? null) !== $ficheiroId)),
+        ]);
     }
 
     public function getDuracaoAttribute(): ?string
