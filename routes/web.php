@@ -49,6 +49,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/', [RegistoHorasController::class, 'index'])->name('registos.index');
     Route::post('/registos/entrada', [RegistoHorasController::class, 'registarEntrada'])->name('registos.entrada');
     Route::post('/registos/{registo}/saida', [RegistoHorasController::class, 'registarSaida'])->name('registos.saida');
+    Route::post('/registos/{registo}/ficheiros', [RegistoHorasController::class, 'submeterFicheiro'])->name('registos.ficheiros.store');
+    Route::delete('/registos/{registo}/ficheiros/{ficheiroId}', [RegistoHorasController::class, 'removerFicheiro'])->name('registos.ficheiros.destroy');
 
     Route::get('/tarefas', [TarefaController::class, 'index'])->name('tarefas.index');
     Route::get('/tarefas/criar', [TarefaController::class, 'create'])->name('tarefas.create');

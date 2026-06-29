@@ -63,6 +63,10 @@ class RegistoHorasController extends Controller
 
         $request->validate([
             'observacoes' => 'nullable|string|max:500',
+            'ficheiro'    => 'nullable|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,zip,rar,jpg,jpeg,png,gif,txt,csv',
+        ], [
+            'ficheiro.max'   => 'O ficheiro não pode exceder 10 MB.',
+            'ficheiro.mimes' => 'Tipo de ficheiro não permitido.',
         ]);
 
         $registo->update([
@@ -70,8 +74,44 @@ class RegistoHorasController extends Controller
             'observacoes' => $request->observacoes,
         ]);
 
+        if ($request->hasFile('ficheiro')) {
+            $file = $request->file('ficheiro');
+            $caminho = $file->store("registos/{$registo->id}", 'public');
+            $registo->adicionarFicheiro($file->getClientOriginalName(), $caminho, Auth::user());
+        }
+
         return redirect()->route('registos.index')
             ->with('sucesso', 'Saída registada com sucesso às ' . now()->format('H:i') . '.');
+    }
+
+    public function submeterFicheiro(Request $request, RegistoHoras $registo)
+    {
+        abort_unless($registo->user_id == Auth::id(), 403);
+
+        $request->validate([
+            'ficheiro' => 'required|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,zip,rar,jpg,jpeg,png,gif,txt,csv',
+        ], [
+            'ficheiro.max'   => 'O ficheiro não pode exceder 10 MB.',
+            'ficheiro.mimes' => 'Tipo de ficheiro não permitido.',
+        ]);
+
+        $file = $request->file('ficheiro');
+        $caminho = $file->store("registos/{$registo->id}", 'public');
+
+        $registo->adicionarFicheiro($file->getClientOriginalName(), $caminho, Auth::user());
+
+        return redirect()->route('registos.index')
+            ->with('sucesso', 'Ficheiro submetido com sucesso.');
+    }
+
+    public function removerFicheiro(RegistoHoras $registo, string $ficheiroId)
+    {
+        abort_unless($registo->user_id == Auth::id(), 403);
+
+        $registo->removerFicheiro($ficheiroId);
+
+        return redirect()->route('registos.index')
+            ->with('sucesso', 'Ficheiro removido.');
     }
 
     public function admin(Request $request)
